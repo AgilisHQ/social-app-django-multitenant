@@ -4,7 +4,9 @@ from django.utils.functional import Promise
 from django.utils.encoding import force_text
 
 from social_core.utils import setting_name
+from social_core.pipeline import DEFAULT_AUTH_PIPELINE, DEFAULT_DISCONNECT_PIPELINE
 from social_django.strategy import DjangoStrategy
+from tenant_schemas.utils import get_tenant_model
 
 
 class DjangoMultiTenantStrategy(DjangoStrategy):
@@ -15,10 +17,26 @@ class DjangoMultiTenantStrategy(DjangoStrategy):
     social_auth_settings = JsonField()
     """
 
+    def __init__(self, storage, request, tpl=None):
+        self.request = request
+        self.session = request.session if request else {}
+        super(DjangoMultiTenantStrategy, self).__init__(storage, request, tpl)
+
+    def _get_tenant(self):
+        '''
+        Get tenant object. This query will always return one tenant.
+        '''
+        return get_tenant_model().objects.all().first()
+
     def get_setting(self, name, backend=None):
-        if backend and not name.endswith('_URL'):
-            value = self.request.tenant.social_auth_settings[
-                backend.name][name]
+        if backend and name.startswith('SOCIAL_AUTH'):
+            tenant = self._get_tenant()
+            try:
+                value = tenant.social_auth_settings[
+                    backend.name][name]
+
+            except KeyError:
+                value = tenant.social_auth_settings[name]
 
         else:
             value = getattr(settings, name)
@@ -45,3 +63,27 @@ class DjangoMultiTenantStrategy(DjangoStrategy):
                 pass
 
         return default
+
+    def get_pipeline(self, backend=None):
+        '''
+        Modified get_pipeline method to make it get from each tenant
+        We convert to tuple social auth settings from tenant because tuple is invalid JSON format
+        '''
+        tenant = self._get_tenant()
+        if tenant:
+            if 'SOCIAL_AUTH_PIPELINE' in tenant.social_auth_settings.keys():
+                return tuple(tenant.social_auth_settings['SOCIAL_AUTH_PIPELINE'])
+
+        return self.setting('PIPELINE', DEFAULT_AUTH_PIPELINE, backend)
+
+    def get_disconnect_pipeline(self, backend=None):
+        '''
+        Modified get_disconnect_pipeline method to make it get from each tenant
+        We convert to tuple social auth settings from tenant because tuple is invalid JSON format
+        '''
+        tenant = self._get_tenant()
+        if tenant:
+            if 'DISCONNECT_PIPELINE' in tenant.social_auth_settings.keys():
+                return tuple(tenant.social_auth_settings['DISCONNECT_PIPELINE'])
+
+        return self.setting('DISCONNECT_PIPELINE', DEFAULT_DISCONNECT_PIPELINE, backend)
