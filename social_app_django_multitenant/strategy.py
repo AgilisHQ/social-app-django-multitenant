@@ -6,7 +6,6 @@ from django.utils.encoding import force_text
 from social_core.utils import setting_name
 from social_core.pipeline import DEFAULT_AUTH_PIPELINE, DEFAULT_DISCONNECT_PIPELINE
 from social_django.strategy import DjangoStrategy
-from tenant_schemas.utils import get_tenant_model
 
 
 class DjangoMultiTenantStrategy(DjangoStrategy):
@@ -22,15 +21,18 @@ class DjangoMultiTenantStrategy(DjangoStrategy):
         self.session = request.session if request else {}
         super(DjangoMultiTenantStrategy, self).__init__(storage, request, tpl)
 
-    def _get_tenant(self):
+    def _get_tenant(self, request=None):
         '''
         Get tenant object. This query will always return one tenant.
         '''
-        return get_tenant_model().objects.all().first()
+        if request:
+            return request.tenant
+
+        return None
 
     def get_setting(self, name, backend=None):
         if backend and name.startswith('SOCIAL_AUTH'):
-            tenant = self._get_tenant()
+            tenant = self._get_tenant(self.request)
             try:
                 value = tenant.social_auth_settings[
                     backend.name][name]
@@ -64,12 +66,12 @@ class DjangoMultiTenantStrategy(DjangoStrategy):
 
         return default
 
-    def get_pipeline(self, backend=None):
+    def get_pipeline(self, backend=None, request=None):
         '''
         Modified get_pipeline method to make it get from each tenant
         We convert to tuple social auth settings from tenant because tuple is invalid JSON format
         '''
-        tenant = self._get_tenant()
+        tenant = self._get_tenant(request)
         if tenant:
             if 'SOCIAL_AUTH_PIPELINE' in tenant.social_auth_settings.keys():
                 return tuple(tenant.social_auth_settings['SOCIAL_AUTH_PIPELINE'])
@@ -81,7 +83,7 @@ class DjangoMultiTenantStrategy(DjangoStrategy):
         Modified get_disconnect_pipeline method to make it get from each tenant
         We convert to tuple social auth settings from tenant because tuple is invalid JSON format
         '''
-        tenant = self._get_tenant()
+        tenant = self._get_tenant(self.request)
         if tenant:
             if 'DISCONNECT_PIPELINE' in tenant.social_auth_settings.keys():
                 return tuple(tenant.social_auth_settings['DISCONNECT_PIPELINE'])
