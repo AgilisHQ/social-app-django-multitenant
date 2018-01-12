@@ -18,6 +18,9 @@ CONFIGURATION
 
 - Add social_auth_settings = JsonField() to your Tenant model
 
+- Include this url to your main urls.py
+  url('', include('social_app_django_multitenant.urls', namespace='social'))
+
 - Add social auth settings with this format
   {
   	"linkedin-oauth2": {
