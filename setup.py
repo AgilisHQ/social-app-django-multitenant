@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='social-app-django-multitenant',
@@ -9,5 +9,6 @@ setup(
         'social-auth-app-django==1.0.1',
         'django-tenant-schemas==1.6.11',
         'six>=1.10.0'
-    ]
+    ],
+    packages=find_packages()
 )
