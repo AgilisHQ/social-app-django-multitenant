@@ -2,6 +2,10 @@ CONFIGURATION
 
 - Install requirements.txt
 
+- Add "social_core" to INSTALLED_APPS django settings
+
+- Add "social_django" to INSTALLED APPS django_settings
+
 - Add "social_app_django_multitenant" to INSTALLED_APPS django settings
 
 - Add SOCIAL_AUTH_STRATEGY = 'social_app_django_multitenant.strategy.DjangoMultiTenantStrategy' to django settings
@@ -9,10 +13,10 @@ CONFIGURATION
 - Add social auth backends to  django settings
   
   AUTHENTICATION_BACKENDS = (
-    'social_app_django_multitenant.backends.twitter.TwitterOAuth',
-    'social_app_django_multitenant.backends.linkedin.LinkedinOAuth2',
-    'social_app_django_multitenant.backends.facebook.FacebookOAuth2',
-    'social_app_django_multitenant.backends.google.GoogleOAuth2',
+    'social_core.backends.twitter.TwitterOAuth',
+    'social_core.backends.linkedin.LinkedinOAuth2',
+    'social_core.backends.facebook.FacebookOAuth2',
+    'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',
   )
 
